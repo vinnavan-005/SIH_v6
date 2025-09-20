@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Input } from '../../components/ui/input';
 import { StorageService } from '../../utils/storage';
 
-const API_BASE_URL = 'http://192.168.1.103:8000/api'; // Update with your IP
+const API_BASE_URL = 'http://172.16.8.108:8000/api'; // Update with your IP
 
 interface IssueMarker {
   id: string;

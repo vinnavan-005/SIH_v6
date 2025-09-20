@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { StorageService } from '../../utils/storage';
 
-const API_BASE_URL = 'http://192.168.0.2:8000/api'; // Replace with your backend URL
+const API_BASE_URL = 'http://172.16.8.108:8000/api'; // Replace with your backend URL
 
 // Categories matching your backend
 const categories = [
@@ -90,6 +90,36 @@ export default function CameraReportScreen() {
 
   function retakePicture() {
     setCapturedImage(null);
+  }
+
+  // Placeholder function for future audio recording
+  function recordAudio() {
+    Alert.alert(
+      'Audio Recording',
+      'Audio recording feature will be implemented here. This will allow users to add voice notes to provide additional context.',
+      [{ text: 'OK' }]
+    );
+  }
+
+  // Placeholder function for GPS location fetching
+  function useCurrentLocation() {
+    if (currentLocation) {
+      Alert.alert(
+        'Use GPS Location',
+        'GPS location integration will be implemented here. This will automatically fetch and format your current address.',
+        [
+          {
+            text: 'Use Coordinates',
+            onPress: () => {
+              setLocation(`${currentLocation.coords.latitude.toFixed(6)}, ${currentLocation.coords.longitude.toFixed(6)}`);
+            }
+          },
+          { text: 'Cancel' }
+        ]
+      );
+    } else {
+      Alert.alert('GPS Not Available', 'Location services are not available.');
+    }
   }
 
   async function submitReport() {
@@ -222,7 +252,16 @@ export default function CameraReportScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
-          {/* Image Preview */}
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="white" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>New Report</Text>
+            <View style={styles.placeholder} />
+          </View>
+
+          {/* Captured Image */}
           <View style={styles.imageContainer}>
             <Image source={{ uri: capturedImage }} style={styles.capturedImage} />
             <TouchableOpacity style={styles.retakeButton} onPress={retakePicture}>
@@ -237,7 +276,7 @@ export default function CameraReportScreen() {
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Issue Title *</Text>
               <TextInput
-                style={styles.titleInput}
+                style={styles.textInput}
                 placeholder="Brief title describing the issue"
                 value={title}
                 onChangeText={setTitle}
@@ -276,86 +315,96 @@ export default function CameraReportScreen() {
               )}
             </View>
 
-            {/* Description */}
+            {/* Description Section */}
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Description *</Text>
-              <TextInput
-                style={styles.descriptionInput}
-                placeholder="Describe the issue in detail..."
-                value={description}
-                onChangeText={setDescription}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={[styles.textInput, styles.descriptionInput]}
+                  multiline
+                  numberOfLines={4}
+                  placeholder="Describe the civic issue (e.g., pothole on main road, broken streetlight, overflowing garbage bin...)"
+                  value={description}
+                  onChangeText={setDescription}
+                  textAlignVertical="top"
+                />
+                <TouchableOpacity style={styles.audioButton} onPress={recordAudio}>
+                  <Ionicons name="mic" size={20} color="#007AFF" />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.placeholderText}>
+                💡 Audio recording feature will be added here for voice descriptions
+              </Text>
             </View>
 
-            {/* Location */}
+            {/* Location Section */}
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Location</Text>
-              <TextInput
-                style={styles.locationInput}
-                placeholder="Enter location details"
-                value={location}
-                onChangeText={setLocation}
-              />
-              {currentLocation && (
-                <View style={styles.locationInfo}>
-                  <Ionicons name="location" size={16} color="#007AFF" />
-                  <Text style={styles.locationText}>
-                    GPS: {currentLocation.coords.latitude.toFixed(6)}, {currentLocation.coords.longitude.toFixed(6)}
-                  </Text>
-                </View>
-              )}
+              <Text style={styles.fieldLabel}>Location *</Text>
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={[styles.textInput, styles.locationInput]}
+                  placeholder="Enter location or address"
+                  value={location}
+                  onChangeText={setLocation}
+                />
+                <TouchableOpacity style={styles.gpsButton} onPress={useCurrentLocation}>
+                  <Ionicons name="location" size={20} color="#007AFF" />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.placeholderText}>
+                📍 GPS location integration will be added here for automatic address detection
+              </Text>
             </View>
-          </View>
 
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-            onPress={submitReport}
-            disabled={isSubmitting}
-          >
-            <Text style={styles.submitButtonText}>
-              {isSubmitting ? 'Submitting...' : 'Submit Report'}
-            </Text>
-          </TouchableOpacity>
+            {/* Submit Button */}
+            <TouchableOpacity 
+              style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
+              onPress={submitReport}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <Text style={styles.submitButtonText}>Submitting...</Text>
+              ) : (
+                <>
+                  <Ionicons name="send" size={20} color="white" />
+                  <Text style={styles.submitButtonText}>Submit Report</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     );
   }
 
+  // Camera View
   return (
     <View style={styles.container}>
       <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
-        <View style={styles.cameraOverlay}>
-          <View style={styles.topControls}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color="white" />
-            </TouchableOpacity>
-            <Text style={styles.cameraTitle}>Report Issue</Text>
-            <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
+        {/* Header with back button */}
+        <View style={styles.cameraHeader}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.cameraHeaderTitle}>Take Photo</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        {/* Camera Controls */}
+        <View style={styles.cameraControls}>
+          <View style={styles.controlsRow}>
+            <TouchableOpacity style={styles.controlButton} onPress={toggleCameraFacing}>
               <Ionicons name="camera-reverse" size={24} color="white" />
             </TouchableOpacity>
-          </View>
-
-          <View style={styles.bottomControls}>
-            <View style={styles.controlButton}>
-              {/* Empty space for alignment */}
-            </View>
             
             <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
               <View style={styles.captureButtonInner} />
             </TouchableOpacity>
             
-            <View style={styles.controlButton}>
-              {/* Empty space for alignment */}
-            </View>
+            <View style={styles.placeholder} />
           </View>
-
-          <Text style={styles.instructionText}>
-            Position the issue in the frame and tap the capture button
-          </Text>
+          
+          <Text style={styles.instructionText}>Position the civic issue in the frame and tap to capture</Text>
         </View>
       </CameraView>
     </View>
@@ -365,14 +414,14 @@ export default function CameraReportScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: 'black',
   },
   permissionContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
     padding: 20,
+    backgroundColor: '#f8f9fa',
   },
   permissionText: {
     fontSize: 18,
@@ -394,44 +443,50 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
   },
-  cameraOverlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  topControls: {
+  cameraHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: 50,
     paddingHorizontal: 20,
+    paddingBottom: 20,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: '#007AFF',
+  },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 8,
   },
-  cameraTitle: {
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
     color: 'white',
+  },
+  cameraHeaderTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    color: 'white',
   },
-  flipButton: {
+  placeholder: {
     width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  bottomControls: {
+  cameraControls: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 0,
     left: 0,
     right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingBottom: 40,
+    paddingTop: 20,
+  },
+  controlsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -515,13 +570,22 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
   },
-  titleInput: {
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  textInput: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   categoryButton: {
     flexDirection: 'row',
@@ -532,6 +596,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   categoryButtonText: {
     fontSize: 16,
@@ -544,6 +613,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'white',
     maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   categoryOption: {
     padding: 12,
@@ -555,49 +629,64 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   descriptionInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: 'white',
+    flex: 1,
     height: 100,
     textAlignVertical: 'top',
+    marginRight: 10,
   },
   locationInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    flex: 1,
+    marginRight: 10,
+  },
+  audioButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
     backgroundColor: 'white',
-  },
-  locationInfo: {
-    flexDirection: 'row',
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f8ff',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
+    alignSelf: 'flex-start',
   },
-  locationText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#333',
+  gpsButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    backgroundColor: 'white',
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+    marginTop: 5,
+    paddingHorizontal: 5,
   },
   submitButton: {
     backgroundColor: '#007AFF',
-    margin: 20,
-    padding: 16,
-    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 15,
+    borderRadius: 8,
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   submitButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#999',
   },
   submitButtonText: {
     color: 'white',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });

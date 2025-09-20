@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // API Configuration
 export const API_CONFIG = {
   // IMPORTANT: Updated for your IP address
-  BASE_URL: 'http://192.168.0.2:8000', // Your computer's IP address
+  BASE_URL: 'http://172.16.8.108:8000', // Your computer's IP address
   ENDPOINTS: {
     AUTH: {
       LOGIN: '/api/auth/login',

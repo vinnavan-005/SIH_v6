@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { StorageService } from '../utils/storage';
 
 // Configuration
-const BASE_URL = 'http://192.168.0.2:8000';
+const BASE_URL = 'http://172.16.8.108:8000';
 
 // Types
 interface User {

@@ -43,7 +43,7 @@ export default function LoginScreen() {
       console.log('🔍 Testing network connection...');
       
       // Test backend health
-      const backendUrl = 'http://192.168.0.2:8000';
+      const backendUrl = 'http://172.16.8.108:8000';
       const response = await fetch(`${backendUrl}/health`);
       const data = await response.json();
       console.log('✅ Backend connection test:', data);
@@ -171,7 +171,7 @@ export default function LoginScreen() {
               style={styles.debugButton}
             />
             <Text style={styles.debugNote}>
-              Backend URL: http://192.168.0.2:8000
+              Backend URL: http://172.16.8.108:8000
             </Text>
           </CardContent>
         </Card>

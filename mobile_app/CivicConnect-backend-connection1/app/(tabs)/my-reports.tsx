@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { StorageService } from '../../utils/storage';
 
-const API_BASE_URL = 'http://192.168.1.103:8000/api';
+const API_BASE_URL = 'http://172.16.8.108:8000/api';
 
 // Updated Report interface to match backend data
 interface Report {
@@ -28,6 +28,16 @@ interface Report {
   longitude?: number;
   citizen_name?: string;
   days_open?: number;
+  departmentAssigned?: string | null;
+  updates?: IssueUpdate[];
+}
+
+interface IssueUpdate {
+  id: number;
+  update_text: string;
+  created_at: string;
+  staff_name?: string;
+  staff_department?: string;
 }
 
 export default function MyReportsScreen() {
@@ -36,23 +46,107 @@ export default function MyReportsScreen() {
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'in-progress' | 'resolved'>('all');
   const [loading, setLoading] = useState(true);
+  const [loadingDetails, setLoadingDetails] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadReports();
-  }, []);
+  // Function to fetch assignment details for an issue
+  const fetchAssignmentDetails = async (issueId: string, token: string): Promise<string | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/assignments/?issue_id=${issueId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.assignments && data.assignments.length > 0) {
+          const assignment = data.assignments[0]; // Get the most recent assignment
+          return assignment.staff_department || 'Department not specified';
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching assignment details:', error);
+      return null;
+    }
+  };
 
-  const loadReports = async () => {
+  // Function to fetch update details for an issue
+  const fetchUpdateDetails = async (issueId: string, token: string): Promise<IssueUpdate[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/updates/?issue_id=${issueId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.updates || [];
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching update details:', error);
+      return [];
+    }
+  };
+
+  // Function to load detailed info for a specific report
+  const loadReportDetails = async (reportId: string) => {
+    if (!reportId) return;
+    
+    setLoadingDetails(reportId);
+    try {
+      const token = await StorageService.getAuthToken();
+      if (!token) return;
+
+      const [department, updates] = await Promise.all([
+        fetchAssignmentDetails(reportId, token),
+        fetchUpdateDetails(reportId, token)
+      ]);
+
+      setReports(prevReports => 
+        prevReports.map(report => 
+          report.id === reportId 
+            ? { 
+                ...report, 
+                departmentAssigned: department,
+                updates: updates 
+              }
+            : report
+        )
+      );
+    } catch (error) {
+      console.error('Error loading report details:', error);
+    } finally {
+      setLoadingDetails(null);
+    }
+  };
+
+  const loadReports = useCallback(async (forceRefresh = false) => {
     try {
       setLoading(true);
+      
+      // Add small delay when force refreshing to ensure backend processing is complete
+      if (forceRefresh) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
       const token = await StorageService.getAuthToken();
       if (!token) {
         router.replace('/(auth)/login');
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/issues/`, {
+      // Add cache-busting parameters to ensure fresh data
+      const timestamp = Date.now();
+      const response = await fetch(`${API_BASE_URL}/issues/?t=${timestamp}&_=${Math.random()}`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         },
       });
 
@@ -76,7 +170,10 @@ export default function MyReportsScreen() {
           latitude: issue.latitude,
           longitude: issue.longitude,
           citizen_name: issue.citizen_name,
-          days_open: issue.days_open || 0
+          days_open: issue.days_open || 0,
+          // We'll fetch these separately for each issue when needed
+          departmentAssigned: null,
+          updates: []
         }));
         setReports(transformedReports);
       } else {
@@ -89,7 +186,19 @@ export default function MyReportsScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  // Load reports when component mounts
+  useEffect(() => {
+    loadReports();
+  }, [loadReports]);
+
+  // Refresh reports when screen comes into focus with force refresh
+  useFocusEffect(
+    useCallback(() => {
+      loadReports(true);
+    }, [loadReports])
+  );
 
   // Helper function to convert status to progress percentage
   const getProgressFromStatus = (status: string) => {
@@ -204,36 +313,40 @@ export default function MyReportsScreen() {
 
         {/* Summary Cards */}
         <View style={styles.summaryContainer}>
-          <Card style={styles.summaryCard}>
-            <CardContent style={styles.summaryContent}>
-              <Text style={styles.summaryNumber}>{reports.length}</Text>
-              <Text style={styles.summaryLabel}>Total Reports</Text>
-            </CardContent>
-          </Card>
-          <Card style={styles.summaryCard}>
-            <CardContent style={styles.summaryContent}>
-              <Text style={[styles.summaryNumber, { color: '#f59e0b' }]}>
-                {reports.filter(r => r.status === 'pending').length}
-              </Text>
-              <Text style={styles.summaryLabel}>Pending</Text>
-            </CardContent>
-          </Card>
-          <Card style={styles.summaryCard}>
-            <CardContent style={styles.summaryContent}>
-              <Text style={[styles.summaryNumber, { color: '#3b82f6' }]}>
-                {reports.filter(r => r.status === 'in-progress').length}
-              </Text>
-              <Text style={styles.summaryLabel}>In Progress</Text>
-            </CardContent>
-          </Card>
-          <Card style={styles.summaryCard}>
-            <CardContent style={styles.summaryContent}>
-              <Text style={[styles.summaryNumber, { color: '#10b981' }]}>
-                {reports.filter(r => r.status === 'resolved').length}
-              </Text>
-              <Text style={styles.summaryLabel}>Resolved</Text>
-            </CardContent>
-          </Card>
+          <View style={styles.summaryRow}>
+            <Card style={styles.summaryCard}>
+              <CardContent style={styles.summaryContent}>
+                <Text style={styles.summaryNumber}>{reports.length}</Text>
+                <Text style={styles.summaryLabel}>Total Reports</Text>
+              </CardContent>
+            </Card>
+            <Card style={styles.summaryCard}>
+              <CardContent style={styles.summaryContent}>
+                <Text style={[styles.summaryNumber, { color: '#f59e0b' }]}>
+                  {reports.filter(r => r.status === 'pending').length}
+                </Text>
+                <Text style={styles.summaryLabel}>Pending</Text>
+              </CardContent>
+            </Card>
+          </View>
+          <View style={styles.summaryRow}>
+            <Card style={styles.summaryCard}>
+              <CardContent style={styles.summaryContent}>
+                <Text style={[styles.summaryNumber, { color: '#3b82f6' }]}>
+                  {reports.filter(r => r.status === 'in-progress').length}
+                </Text>
+                <Text style={styles.summaryLabel}>In Progress</Text>
+              </CardContent>
+            </Card>
+            <Card style={styles.summaryCard}>
+              <CardContent style={styles.summaryContent}>
+                <Text style={[styles.summaryNumber, { color: '#10b981' }]}>
+                  {reports.filter(r => r.status === 'resolved').length}
+                </Text>
+                <Text style={styles.summaryLabel}>Resolved</Text>
+              </CardContent>
+            </Card>
+          </View>
         </View>
 
         {/* Reports List */}
@@ -245,7 +358,15 @@ export default function MyReportsScreen() {
             return (
               <Card key={report.id}>
                 <TouchableOpacity
-                  onPress={() => setSelectedReport(isExpanded ? null : report.id)}
+                  onPress={() => {
+                    const newSelectedReport = isExpanded ? null : report.id;
+                    setSelectedReport(newSelectedReport);
+                    
+                    // Load details when expanding
+                    if (newSelectedReport && (!report.departmentAssigned && !report.updates?.length)) {
+                      loadReportDetails(newSelectedReport);
+                    }
+                  }}
                 >
                   <CardHeader style={styles.reportHeader}>
                     <View style={styles.reportTitleRow}>
@@ -291,10 +412,6 @@ export default function MyReportsScreen() {
                     </View>
 
                     <View style={styles.reportFooter}>
-                      <View style={styles.locationContainer}>
-                        <Ionicons name="location-outline" size={12} color="#6b7280" />
-                        <Text style={styles.locationText}>{report.location}</Text>
-                      </View>
                       <View style={styles.timeContainer}>
                         <Ionicons name="calendar-outline" size={12} color="#6b7280" />
                         <Text style={styles.timeText}>Submitted {formatDate(report.submittedAt)}</Text>
@@ -334,6 +451,48 @@ export default function MyReportsScreen() {
                     <View style={styles.detailSection}>
                       <Text style={styles.detailLabel}>Last Updated</Text>
                       <Text style={styles.detailText}>{formatDate(report.lastUpdate)}</Text>
+                    </View>
+
+                    {/* Assigned Department */}
+                    <View style={styles.detailSection}>
+                      <Text style={styles.detailLabel}>Assigned Department</Text>
+                      {loadingDetails === report.id ? (
+                        <Text style={styles.loadingText}>Loading...</Text>
+                      ) : (
+                        <View style={styles.departmentBadge}>
+                          <Text style={styles.departmentText}>
+                            {report.departmentAssigned || 'Dept not assigned yet'}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Updates Timeline */}
+                    <View style={styles.detailSection}>
+                      <Text style={styles.detailLabel}>Updates Timeline</Text>
+                      {loadingDetails === report.id ? (
+                        <Text style={styles.loadingText}>Loading updates...</Text>
+                      ) : report.updates && report.updates.length > 0 ? (
+                        <View style={styles.timeline}>
+                          {report.updates.map((update, index) => (
+                            <View key={update.id || index} style={styles.timelineItem}>
+                              <View style={styles.timelineDot} />
+                              <View style={styles.timelineContent}>
+                                <View style={styles.updateHeader}>
+                                  <Text style={styles.updateAuthor}>
+                                    {update.staff_name || 'Staff Member'} 
+                                    {update.staff_department && ` (${update.staff_department})`}
+                                  </Text>
+                                  <Text style={styles.updateDate}>{formatDate(update.created_at)}</Text>
+                                </View>
+                                <Text style={styles.updateMessage}>{update.update_text}</Text>
+                              </View>
+                            </View>
+                          ))}
+                        </View>
+                      ) : (
+                        <Text style={styles.emptyUpdatesText}>No updates yet</Text>
+                      )}
                     </View>
                   </CardContent>
                 )}
@@ -404,27 +563,39 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   summaryContainer: {
-    flexDirection: 'row',
     gap: 12,
     marginBottom: 24,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
   summaryCard: {
     flex: 1,
     marginBottom: 0,
+    minHeight: 70,
   },
   summaryContent: {
     alignItems: 'center',
-    padding: 16,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    minHeight: 70,
   },
   summaryNumber: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#030213',
     marginBottom: 4,
+    textAlign: 'center',
+    lineHeight: 28,
   },
   summaryLabel: {
     fontSize: 12,
     color: '#6b7280',
+    textAlign: 'center',
+    fontWeight: '500',
+    lineHeight: 14,
   },
   reportsList: {
     gap: 16,
@@ -585,5 +756,63 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '500',
+  },
+  departmentBadge: {
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  departmentText: {
+    fontSize: 12,
+    color: '#1d4ed8',
+  },
+  timeline: {
+    gap: 12,
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  timelineDot: {
+    width: 8,
+    height: 8,
+    backgroundColor: '#3b82f6',
+    borderRadius: 4,
+    marginTop: 6,
+  },
+  timelineContent: {
+    flex: 1,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  updateHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  updateAuthor: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#030213',
+    flex: 1,
+  },
+  updateDate: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  updateMessage: {
+    fontSize: 14,
+    color: '#6b7280',
+    lineHeight: 20,
+  },
+  emptyUpdatesText: {
+    fontSize: 14,
+    color: '#9ca3af',
+    fontStyle: 'italic',
   },
 });
