@@ -16,7 +16,7 @@ interface Report {
   category: string;
   location: string;
   description: string;
-  status: 'pending' | 'in-progress' | 'resolved';
+  status: 'pending' | 'in_progress' | 'resolved';
   progress: number;
   upvotes: number;
   submittedAt: string;
@@ -44,7 +44,7 @@ export default function MyReportsScreen() {
   const router = useRouter();
   const [reports, setReports] = useState<Report[]>([]);
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'in-progress' | 'resolved'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'resolved'>('all');
   const [loading, setLoading] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState<string | null>(null);
 
@@ -204,7 +204,7 @@ export default function MyReportsScreen() {
   const getProgressFromStatus = (status: string) => {
     switch (status) {
       case 'pending': return 25;
-      case 'in-progress': return 60;
+      case 'in_progress': return 60;
       case 'resolved': return 100;
       default: return 0;
     }
@@ -239,7 +239,7 @@ export default function MyReportsScreen() {
           bgColor: '#fef3c7',
           label: 'Pending Review'
         };
-      case 'in-progress':
+      case 'in_progress':
         return {
           icon: <Ionicons name="trending-up" size={16} color="#3b82f6" />,
           color: '#3b82f6',
@@ -265,11 +265,11 @@ export default function MyReportsScreen() {
 
   const getCategoryLabel = (category: string) => {
     const categoryMap: { [key: string]: string } = {
-      'roads': 'Roads & Infrastructure',
-      'waste': 'Waste Management',
-      'water': 'Water & Drainage',
-      'streetlight': 'Street Lighting',
-      'other': 'Other'
+      'potholes': 'Road Department',
+      'WaterLogging': 'Public Service',
+      'DamagedElectricalPoles': 'Electricity Department',
+      'Garbage': 'Sanitary Department',
+      'FallenTrees': 'Public Service'
     };
     return categoryMap[category] || category;
   };
@@ -298,7 +298,7 @@ export default function MyReportsScreen() {
           
           {/* Filter buttons */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
-            {(['all', 'pending', 'in-progress', 'resolved'] as const).map((status) => (
+            {(['all', 'pending', 'in_progress', 'resolved'] as const).map((status) => (
               <Button
                 key={status}
                 title={status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}
@@ -333,7 +333,7 @@ export default function MyReportsScreen() {
             <Card style={styles.summaryCard}>
               <CardContent style={styles.summaryContent}>
                 <Text style={[styles.summaryNumber, { color: '#3b82f6' }]}>
-                  {reports.filter(r => r.status === 'in-progress').length}
+                  {reports.filter(r => r.status === 'in_progress').length}
                 </Text>
                 <Text style={styles.summaryLabel}>In Progress</Text>
               </CardContent>

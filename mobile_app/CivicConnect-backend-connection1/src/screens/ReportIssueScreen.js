@@ -34,17 +34,7 @@ export default function ReportIssueScreen() {
   const [location, setLocation] = useState(null);
 
   const cameraRef = useRef();
-
-  const categories = [
-    { label: 'Pothole', value: 'pothole' },
-    { label: 'Street Light', value: 'streetlight' },
-    { label: 'Garbage/Sanitation', value: 'garbage' },
-    { label: 'Water Supply', value: 'water' },
-    { label: 'Traffic Signal', value: 'traffic' },
-    { label: 'Road Damage', value: 'road' },
-    { label: 'Other', value: 'other' },
-  ];
-
+  
   useEffect(() => {
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();

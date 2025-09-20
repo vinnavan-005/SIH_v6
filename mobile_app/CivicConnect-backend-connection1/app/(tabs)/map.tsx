@@ -32,19 +32,19 @@ interface IssueMarker {
 }
 
 const categoryColors: { [key: string]: string } = {
-  'roads': '#fca5a5',
-  'water': '#93c5fd',
-  'streetlight': '#fde68a',
-  'waste': '#86efac',
-  'other': '#fdba74'
+  'potholes': '#fca5a5',
+  'DamagedElectricalPoles': '#93c5fd',
+  'Garbage': '#fde68a',
+  'WaterLogging': '#86efac',
+  'FallenTrees': '#fdba74'
 };
 
 const categoryLabels: { [key: string]: string } = {
-  'roads': 'Roads & Infrastructure',
-  'water': 'Water & Drainage',
-  'streetlight': 'Street Lighting',
-  'waste': 'Waste Management',
-  'other': 'Other'
+  'potholes': 'Road Department',
+  'WaterLogging': 'Public Service',
+  'DamagedElectricalPoles': 'Electricity Department',
+  'Garbage': 'Sanitary Department',
+  'FallenTrees': 'Public Service'
 };
 
 const categories = Object.keys(categoryColors);

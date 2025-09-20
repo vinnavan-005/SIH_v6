@@ -5,7 +5,7 @@ import { API_CONFIG, apiClient } from '../utils/api';
 export interface IssueCreateRequest {
   title: string;
   description: string;
-  category: 'roads' | 'waste' | 'water' | 'streetlight' | 'other';
+  category: 'potholes' | 'DamagedElectricityPoles' | 'Garbage' | 'WaterLogging' | 'FallenTrees';
   latitude?: number;
   longitude?: number;
   image_url?: string;
@@ -15,7 +15,7 @@ export interface IssueResponse {
   id: number;
   title: string;
   description: string;
-  category: 'roads' | 'waste' | 'water' | 'streetlight' | 'other';
+  category: 'potholes' | 'DamagedElectricityPoles' | 'Garbage' | 'WaterLogging' | 'FallenTrees';
   latitude: number | null;
   longitude: number | null;
   image_url: string | null;
@@ -58,7 +58,7 @@ export interface FileUploadResponse {
 export interface CreateIssueWithImageRequest {
   title: string;
   description: string;
-  category: 'roads' | 'waste' | 'water' | 'streetlight' | 'other';
+  category: 'potholes' | 'DamagedElectricityPoles' | 'Garbage' | 'WaterLogging' | 'FallenTrees';
   latitude?: number;
   longitude?: number;
   imageUri?: string; // Local image URI
@@ -150,7 +150,7 @@ export class IssueService {
    */
   static async getIssues(params?: {
     status?: 'pending' | 'in_progress' | 'resolved';
-    category?: 'roads' | 'waste' | 'water' | 'streetlight' | 'other';
+    category?: 'potholes' | 'DamagedElectricityPoles' | 'Garbage' | 'WaterLogging' | 'FallenTrees';
     page?: number;
     per_page?: number;
     search?: string;
@@ -214,11 +214,11 @@ export class IssueService {
    */
   static getCategoryDisplayName(category: string): string {
     const categoryMap: Record<string, string> = {
-      'roads': 'Roads & Infrastructure',
-      'waste': 'Waste Management',
-      'water': 'Water & Utilities',
-      'streetlight': 'Street Lighting',
-      'other': 'Other Issues'
+      'potholes': 'Road Department',
+      'WaterLogging': 'Public Service',
+      'DamagedElectricalPoles': 'Electricity Department',
+      'Garbage': 'Sanitary Department',
+      'FallenTrees': 'Public Service'
     };
     return categoryMap[category] || category;
   }

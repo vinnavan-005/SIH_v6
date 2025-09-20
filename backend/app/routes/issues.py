@@ -337,7 +337,7 @@ async def create_issue_with_image(
 @router.get("/", response_model=IssueListResponse)
 async def list_issues(
     status_filter: Optional[Literal["pending", "in_progress", "resolved"]] = Query(None, alias="status"),
-    category: Optional[Literal["roads", "waste", "water", "streetlight", "other"]] = Query(None),
+    category: Optional[Literal["potholes", "DamagedElectricalPoles", "Garbage", "WaterLogging", "FallenTrees"]] = Query(None),
     citizen_id: Optional[str] = Query(None, description="Filter by citizen ID"),
     department: Optional[str] = Query(None, description="Filter by assigned department"),
     min_upvotes: Optional[int] = Query(None, description="Minimum upvotes"),
@@ -600,7 +600,7 @@ async def get_issue_stats(
             stats["resolved_issues"] = count_records("issues", {**issues_filter, "status": "resolved"})
             
             # Get issues by category
-            categories = ["roads", "waste", "water", "streetlight", "other"]
+            categories = ["potholes", "DamagedElectricalPoles", "Garbage", "WaterLogging", "FallenTrees"]
             for category in categories:
                 count = count_records("issues", {**issues_filter, "category": category})
                 stats["issues_by_category"][category] = count

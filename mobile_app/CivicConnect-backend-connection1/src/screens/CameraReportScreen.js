@@ -21,13 +21,6 @@ import { StorageService } from '../../utils/storage';
 const API_BASE_URL = 'http://172.16.8.108:8000/api'; // Replace with your backend URL
 
 // Categories matching your backend
-const categories = [
-  { value: 'roads', label: 'Roads & Infrastructure' },
-  { value: 'waste', label: 'Waste Management' },
-  { value: 'water', label: 'Water & Drainage' },
-  { value: 'streetlight', label: 'Street Lighting' },
-  { value: 'other', label: 'Other' }
-];
 
 export default function CameraReportScreen() {
   const router = useRouter();
